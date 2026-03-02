@@ -119,3 +119,4 @@ class Board():
             nb_joueur = 1
         return nb_joueur
     
+jeu = Board()
