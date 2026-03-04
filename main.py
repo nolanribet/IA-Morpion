@@ -1,3 +1,6 @@
+import pickle
+import os
+import random
 
 empty = 0
 player_x = 1
@@ -119,9 +122,6 @@ class Board():
             nb_joueur = 1
         return nb_joueur
     
-<<<<<<< Updated upstream
-jeu = Board()
-=======
     def moves_possible(self):
         liste_possible = []
         for i in range(len(self.grid)):
@@ -172,5 +172,15 @@ class Agent():
         self.q_table[tuple(state)][action] = nouveau_score # On donne au tableau d'actions de l'IA le nouveau score pour affiner et la faire apprendre. On rempli donc la case de notre tableau correspondant à cette case de ce plateau
 
 
->>>>>>> Stashed changes
+    def save_q_table(self, nom_fichier="ia_memoire.pkl"):
+        with open(nom_fichier, "wb") as f:
+            pickle.dump(self.q_table, f)
+        print(f"Mémoire sauvegardé dans {nom_fichier} ({len(self.q_table)} états connues).")
+
+    def load_q_table(self, nom_fichier="ia_memoire.pkl"):
+        if os.path.exists(nom_fichier):
+            with open(nom_fichier, "rb") as f:
+                self.q_table = pickle.load(f)
+            print(f"Mémoire chargée ! L'IA se souvient de {len(self.q_table)} situations.")
+        else : print("Aucune mémoire trouvée. L'IA commence de zéro.")
 
