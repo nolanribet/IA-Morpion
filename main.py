@@ -119,4 +119,58 @@ class Board():
             nb_joueur = 1
         return nb_joueur
     
+<<<<<<< Updated upstream
 jeu = Board()
+=======
+    def moves_possible(self):
+        liste_possible = []
+        for i in range(len(self.grid)):
+            if self.grid[i] == 0:
+                liste_possible.append(i)
+        return liste_possible
+
+
+class Agent():
+    def __init__(self):
+        self.alpha = 0.1 # Vitesse d'apprentissage : gère si l'IA préfère se conforter dans ces connaissances ou si elle veut en apprendre plus
+        self.gamma = 0.9 # Facteur de réduction : gère la vision à long terme ou la récompense instantanée
+        self.epsilon = 0.1 # Probabilité d'exploration
+        self.q_table = {}
+        self.symbol = ""
+
+    def get_q_values(self, state): # Permettre à l'IA de lire le plateau
+        state_tuple = tuple(state)
+        if state_tuple not in self.q_table: # Si l'IA n'a jamais vu ce plateau, elle l'ajoute à sa liste de plateau
+            self.q_table[state_tuple] = [0.0] * 9 # Par défaut on mets la note de 0 car on ne sait pas si le coup va être bien ou pas
+
+    def choose_action(self, board):
+        vides = board.moves_possible()
+        if not vides: # Sécurité dans le cas ou la liste serait pleine (pas censé arriver)
+            return None
+        # Gestion entre exploration et exploitation des connaissances 
+        if random.random() < self.epsilon: # Cas d'exploration (on gère si on explore ou pas en générant un nombre aléatoire entre 0 et 1 et en regardant si il est inférieur a notre epsilon alors on explore)
+            return random.choice(vides)
+        else: # Cas d'exploitation des données 
+            q_values = self.get_q_values(board.grid)
+            meilleur_score = -float('inf') # On initialise avec - infini et pas zéro car le score de l'ia peut être de -1 en cas de défaite
+            meilleur_coup = vides[0] # On initialise un meilleur coup
+            for coup in vides: # Pour chaque case vide de la grille, on regarde son score dans la liste de mémoire  
+                score = q_values[coup] # On récupère le score du coup
+                if score > meilleur_score: # On compare si le score du nouveau coup est supérieur au meilleur score qu'on avait trouvé jusque la   
+                    meilleur_score = score
+                    meilleur_coup = coup
+            return meilleur_coup # On renvoie l'index du coup avec le meilleur score
+        
+
+    def learn(self, state, action, reward, next_state):
+        q_values = self.get_q_values(state) # On récupère les notes actuelles pour la situation
+        next_q_values = self.get_q_values(next_state) # On regarde les possibilités
+        meilleur_futur = max(next_q_values) # On garde la meilleure possibilité 
+        target = reward + self.gamma * meilleur_futur # Deux parties : le reward qui est la récompense immédiate selon l'action faite, le gamma * meilleur_futur qui prend en compte le futur et calcule si ce coup peut être avantageux à l'avenir
+        ancien_score = q_values[action] # On regarde le score que l'IA donnait au coup avant de le jouer  
+        nouveau_score = ancien_score + self.alpha * (target - ancien_score) # target - ancien_score = l'écart entre la réalité et ce qu'avais prévu l'IA, le self.alpha sert à savoir si l'IA oublie tout ce qu'elle savait quand elle voit que cette action marche ou si elle garde en mémoire les anciennes.
+        self.q_table[tuple(state)][action] = nouveau_score # On donne au tableau d'actions de l'IA le nouveau score pour affiner et la faire apprendre. On rempli donc la case de notre tableau correspondant à cette case de ce plateau
+
+
+>>>>>>> Stashed changes
+
