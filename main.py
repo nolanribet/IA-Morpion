@@ -199,7 +199,7 @@ def jouer_jcia(grille, agent_ia):
     old_epsilon = agent_ia.epsilon
     agent_ia.epsilon = 0 
     
-    print("Vous êtes les X, l'IA est les O.")
+    print("Vous êtes les O, l'IA est les X.")
     while True:
         # Tour Humain (X)
         grille.display()
@@ -224,8 +224,50 @@ def jouer_jcia(grille, agent_ia):
     
     agent_ia.epsilon = old_epsilon # On remet l'epsilon d'origine
 
+def jouer_ia_commence(grille, agent_ia):
+    grille.reset()
+    # On désactive l'exploration pour que l'IA soit au maximum de ses capacités
+    old_epsilon = agent_ia.epsilon
+    agent_ia.epsilon = 0 
+    
+    print("\nL'IA commence (elle est les X), vous êtes les O.")
+    
+    while True:
+        # --- Tour IA (X) ---
+        print("L'IA réfléchit...")
+        time.sleep(0.5)
+        # Ici l'IA utilise ses connaissances de "X" (ax)
+        move_ia = agent_ia.choose_action(grille)
+        grille.make_move(move_ia, player_x)
+        
+        if grille.check_winner() == player_x:
+            grille.display()
+            print("L'IA a gagné ! Elle est devenue trop forte...")
+            break
+        if grille.is_grid_full():
+            grille.display()
+            print("Match nul ! C'est déjà une victoire contre cette IA.")
+            break
+            
+        # --- Tour Humain (O) ---
+        grille.display()
+        print("À vous de jouer (O) :")
+        move = grille.get_human_move()
+        grille.make_move(move, player_o)
+        
+        if grille.check_winner() == player_o:
+            grille.display()
+            print("Incroyable ! Vous avez battu l'IA alors qu'elle commençait !")
+            break
+        if grille.is_grid_full():
+            grille.display()
+            print("Match nul !")
+            break
+            
+    agent_ia.epsilon = old_epsilon # On restaure l'epsilon
+
 def entrainer_ia(grille, agent_x, agent_o, nb):
-    attente_entre_tours = 0
+    attente_entre_tours = 1.5
     print(f"\nLancement de l'entraînement pour {nb} parties...")
     
     for i in range(nb):
@@ -234,7 +276,8 @@ def entrainer_ia(grille, agent_x, agent_o, nb):
         last_o, last_a_o = None, None
         game_over = False
         
-        visible = (i % 1000000 == 0 and i != 0)
+        visible = (i % 10 == 0 and i != 0)
+        # visible = False
         
         if visible:
             print(f"\n{'='*20}")
@@ -311,16 +354,18 @@ def menu():
         print("\n--- MENU MORPION IA ---")
         print("1. Joueur vs Joueur")
         print("2. Joueur (X) vs IA (O)")
-        print("3. Entraîner l'IA (IA vs IA)")
-        print("4. Sauvegarder et Quitter")
+        print("3. Joueur (O) vs IA (X) mais IA commence")
+        print("4. Entraîner l'IA (IA vs IA)")
+        print("5. Sauvegarder et Quitter")
         
         c = input("Choix : ")
         if c == "1": jouer_jcj(board)
         elif c == "2": jouer_jcia(board, ao)
-        elif c == "3":
+        elif c == "3": jouer_ia_commence(board, ao)
+        elif c == "4":
             n = int(input("Combien de parties ? "))
             entrainer_ia(board, ax, ao, n)
-        elif c == "4":
+        elif c == "5":
             ax.save_q_table("agent_x.pkl")
             ao.save_q_table("agent_o.pkl")
             break
