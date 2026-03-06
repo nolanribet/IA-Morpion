@@ -1,6 +1,7 @@
 import pickle
 import os
 import random
+import time
 
 empty = 0
 player_x = 1
@@ -8,34 +9,7 @@ player_o = 2
 
 class Board():
     def __init__(self):
-        self.grid = [0] * 9
-        self.player = player_x # Variable de test pour savoir a quel joueur c'est
-
-        print("===== Bienvenue dans le jeu du morpion =====")
-        print("\n————— LES REGLES ————— : \n- Chacun son tour un joueur choisira une case sur laquelle poser sa croix ou son rond.\n- Pour sélectionner la case il devra taper un chiffre entre 1 et 9 en suivant la grille suivante :\n  1 | 2 | 3\n  —————————\n  4 | 5 | 6\n  —————————\n  7 | 8 | 9")
-        print("- Le joueur 1 est celui qui a les X et le joueur 2 celui qui a les O.\n- En sélectionnant un numéro le joueur fera apparaitre son symbole sur la grille de jeu.")
-        print("\n————— Le jeu commence —————")
-        gagnant_trouve = False
-        grille_pleine = False
-        nb_joueur = 1
-        while(not(gagnant_trouve) and not(grille_pleine)):
-            print(f"\nC'est au joueur {nb_joueur} de joueur, grille actuelle : ")
-            self.display()
-            action = self.get_human_move()
-            self.make_move(action, nb_joueur)
-            gagnant_trouve = self.check_winner()
-            grille_pleine = self.is_grid_full()
-            nb_joueur = self.exchange_player(nb_joueur)
-        if gagnant_trouve == True:
-            nb_joueur = self.exchange_player(nb_joueur)
-            print(f"Bravo au joueur {nb_joueur} pour avoir remporté la partie ! La grille est : ")
-            self.display()
-        else: 
-            print("\n Match Nul : La grille est rempli et personne n'a gagné : ")
-            self.display()
-            
-         
-
+        self.grid = [0] * 9       
 
     def display(self): # Afficher la grille
         compteur_indice = 0               
@@ -128,6 +102,10 @@ class Board():
             if self.grid[i] == 0:
                 liste_possible.append(i)
         return liste_possible
+    
+
+    def reset(self):
+        self.grid = [0] * 9
 
 
 class Agent():
@@ -136,12 +114,13 @@ class Agent():
         self.gamma = 0.9 # Facteur de réduction : gère la vision à long terme ou la récompense instantanée
         self.epsilon = 0.1 # Probabilité d'exploration
         self.q_table = {}
-        self.symbol = ""
+        self.symbol = ''
 
     def get_q_values(self, state): # Permettre à l'IA de lire le plateau
         state_tuple = tuple(state)
         if state_tuple not in self.q_table: # Si l'IA n'a jamais vu ce plateau, elle l'ajoute à sa liste de plateau
             self.q_table[state_tuple] = [0.0] * 9 # Par défaut on mets la note de 0 car on ne sait pas si le coup va être bien ou pas
+        return self.q_table[state_tuple]
 
     def choose_action(self, board):
         vides = board.moves_possible()
@@ -184,3 +163,167 @@ class Agent():
             print(f"Mémoire chargée ! L'IA se souvient de {len(self.q_table)} situations.")
         else : print("Aucune mémoire trouvée. L'IA commence de zéro.")
 
+
+
+
+
+
+def jouer_jcj(grille):
+    grille.reset()
+    print("===== Bienvenue dans le jeu du morpion =====")
+    print("\n————— LES REGLES ————— : \n- Chacun son tour un joueur choisira une case sur laquelle poser sa croix ou son rond.\n- Pour sélectionner la case il devra taper un chiffre entre 1 et 9 en suivant la grille suivante :\n  1 | 2 | 3\n  —————————\n  4 | 5 | 6\n  —————————\n  7 | 8 | 9")
+    print("- Le joueur 1 est celui qui a les X et le joueur 2 celui qui a les O.\n- En sélectionnant un numéro le joueur fera apparaitre son symbole sur la grille de jeu.")
+    print("\n————— Le jeu commence —————")
+    gagnant_trouve = False
+    grille_pleine = False
+    nb_joueur = 1
+    while(not(gagnant_trouve) and not(grille_pleine)):
+        print(f"\nC'est au joueur {nb_joueur} de joueur, grille actuelle : ")
+        grille.display()
+        action = grille.get_human_move()
+        grille.make_move(action, nb_joueur)
+        gagnant_trouve = grille.check_winner()
+        grille_pleine = grille.is_grid_full()
+        nb_joueur = grille.exchange_player(nb_joueur)
+        if gagnant_trouve:
+            nb_joueur = grille.exchange_player(nb_joueur)
+            print(f"\n=== Bravo au joueur {nb_joueur} pour avoir remporté la partie ! La grille est : ")
+            grille.display()
+        else: 
+            print("\n=== Match Nul : La grille est rempli et personne n'a gagné : ")
+            grille.display()
+
+def jouer_jcia(grille, agent_ia):
+    grille.reset()
+    # On désactive l'exploration pour que l'IA soit sérieuse
+    old_epsilon = agent_ia.epsilon
+    agent_ia.epsilon = 0 
+    
+    print("Vous êtes les X, l'IA est les O.")
+    while True:
+        # Tour Humain (X)
+        grille.display()
+        move = grille.get_human_move()
+        grille.make_move(move, player_x)
+        
+        if grille.check_winner() == player_x:
+            grille.display(); print("Vous avez battu l'IA !"); break
+        if grille.is_grid_full():
+            grille.display(); print("Match nul !"); break
+            
+        # Tour IA (O)
+        print("L'IA réfléchit...")
+        time.sleep(0.5)
+        move_ia = agent_ia.choose_action(grille)
+        grille.make_move(move_ia, player_o)
+        
+        if grille.check_winner() == player_o:
+            grille.display(); print("L'IA a gagné !"); break
+        if grille.is_grid_full():
+            grille.display(); print("Match nul !"); break
+    
+    agent_ia.epsilon = old_epsilon # On remet l'epsilon d'origine
+
+def entrainer_ia(grille, agent_x, agent_o, nb):
+    attente_entre_tours = 0
+    print(f"\nLancement de l'entraînement pour {nb} parties...")
+    
+    for i in range(nb):
+        grille.reset()
+        last_x, last_a_x = None, None
+        last_o, last_a_o = None, None
+        game_over = False
+        
+        visible = (i % 1000000 == 0 and i != 0)
+        
+        if visible:
+            print(f"\n{'='*20}")
+            print(f"MATCH DE DÉMO : PARTIE n°{i}")
+            print(f"{'='*20}")
+
+        while not game_over:
+            # TOUR X
+            s_x = list(grille.grid)
+            a_x = agent_x.choose_action(grille)
+            grille.make_move(a_x, player_x)
+            n_s_x = list(grille.grid)
+            
+            if visible:
+                print("\nAgent X joue :")
+                grille.display()
+                time.sleep(attente_entre_tours)
+            
+            winner = grille.check_winner()
+            if winner == player_x:
+                agent_x.learn(s_x, a_x, 1, n_s_x)
+                if last_o: agent_o.learn(last_o, last_a_o, -1, n_s_x)
+                if visible: print("VICTOIRE DE L'AGENT X !"); print("-" * 20)
+                game_over = True
+            elif grille.is_grid_full():
+                agent_x.learn(s_x, a_x, 0.5, n_s_x)
+                if last_o: agent_o.learn(last_o, last_a_o, 0.5, n_s_x)
+                if visible: print("MATCH NUL !"); print("-" * 20)
+                game_over = True
+            else:
+                if last_o: agent_o.learn(last_o, last_a_o, 0, n_s_x)
+                last_x, last_a_x = s_x, a_x
+                
+                # TOUR O
+                if not game_over:
+                    s_o = list(grille.grid)
+                    a_o = agent_o.choose_action(grille)
+                    grille.make_move(a_o, player_o)
+                    n_s_o = list(grille.grid)
+                    
+                    if visible:
+                        print("\nAgent O joue :")
+                        grille.display()
+                        time.sleep(attente_entre_tours)
+                    
+                    winner = grille.check_winner()
+                    if winner == player_o:
+                        agent_o.learn(s_o, a_o, 1, n_s_o)
+                        agent_x.learn(last_x, last_a_x, -1, n_s_o)
+                        if visible: print("VICTOIRE DE L'AGENT O !"); print("-" * 20)
+                        game_over = True
+                    elif grille.is_grid_full():
+                        agent_o.learn(s_o, a_o, 0.5, n_s_o)
+                        agent_x.learn(last_x, last_a_x, 0.5, n_s_o)
+                        if visible: print("MATCH NUL !"); print("-" * 20)
+                        game_over = True
+                    else:
+                        agent_x.learn(last_x, last_a_x, 0, n_s_o)
+                        last_o, last_a_o = s_o, a_o
+
+        if i % 500000 == 0 and i != 0:
+            print(f"Progrès : {i}/{nb} parties (Mémoire X: {len(agent_x.q_table)} situations)")
+
+    print(f"\nEntraînement terminé ! Les agents ont appris : Mémoire X = {len(agent_x.q_table)}, Mémoire O : {len(agent_o.q_table)}.")
+
+def menu():
+    board = Board()
+    ax = Agent()
+    ao = Agent()
+    ax.load_q_table("agent_x.pkl")
+    ao.load_q_table("agent_o.pkl")
+
+    while True:
+        print("\n--- MENU MORPION IA ---")
+        print("1. Joueur vs Joueur")
+        print("2. Joueur (X) vs IA (O)")
+        print("3. Entraîner l'IA (IA vs IA)")
+        print("4. Sauvegarder et Quitter")
+        
+        c = input("Choix : ")
+        if c == "1": jouer_jcj(board)
+        elif c == "2": jouer_jcia(board, ao)
+        elif c == "3":
+            n = int(input("Combien de parties ? "))
+            entrainer_ia(board, ax, ao, n)
+        elif c == "4":
+            ax.save_q_table("agent_x.pkl")
+            ao.save_q_table("agent_o.pkl")
+            break
+
+
+menu()
